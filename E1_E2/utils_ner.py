@@ -1,3 +1,8 @@
+import numpy as np
+import torch
+from torch.utils.data import DataLoader
+from dataset_ner import NERGmbData_test, NERGmbData
+
 def criterion(output, target): #batch_size, max_len, num_tags; batch_size, max_len
     output = output.view(-1, output.shape[2]) # reshape the tensor
     target = target.view(-1) # reshape the tensor
@@ -5,20 +10,14 @@ def criterion(output, target): #batch_size, max_len, num_tags; batch_size, max_l
     target = target[target!=-1]
     return -torch.sum(output[range(output.shape[0]),target])/output.shape[0]
 
-def get_loaders(batch_size):
-    train_dataset = NERGmbData('train.txt', '/')
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, collate_fn=pad_collate, num_workers=2, pin_memory=True)
+def get_loaders(batch_size, file_path, pad_collate):
+    dataset = NERGmbData(file_path)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, collate_fn=pad_collate, num_workers=2, pin_memory=True)
 
-    val_dataset = NERGmbData('dev.txt', '/')
-    val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, collate_fn=pad_collate, num_workers=2, pin_memory=True)
+    return dataloader
 
-    test_dataset = NERGmbData('test.txt', '/')
-    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=pad_collate, num_workers=2, pin_memory=True)
-
-    return train_dataloader, val_dataloader, test_dataloader
-
-def get_loader_test(batch_size, file):
-    test_dataset = NERGmbData_test(file, '/')
+def get_loader_test(batch_size, file_path, pad_collate_test):
+    test_dataset = NERGmbData_test(file_path)
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=pad_collate_test, num_workers=2, pin_memory=True)
 
     return test_dataloader
@@ -63,7 +62,7 @@ class EarlyStopping:
             self.save_checkpoint(val_loss, model)
         elif score < self.best_score + self.delta:
             self.counter += 1
-            self.trace_func(f'EarlyStopping counter: {self.counter} out of {self.patience}')
+            # self.trace_func(f'EarlyStopping counter: {self.counter} out of {self.patience}')
             if self.counter >= self.patience:
                 self.early_stop = True
         else:

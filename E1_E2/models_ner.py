@@ -1,3 +1,7 @@
+from torch import jit
+from torch import nn
+import torch
+
 class LayerNormLSTMCell(jit.ScriptModule): #jit.ScriptModule, nn.Module
     def __init__(self, input_size, hidden_size, decompose_layernorm=False):
         super(LayerNormLSTMCell, self).__init__()
@@ -7,8 +11,6 @@ class LayerNormLSTMCell(jit.ScriptModule): #jit.ScriptModule, nn.Module
         self.linear_ih = nn.Linear(input_size, 4 * hidden_size) #1
         self.linear_hh = nn.Linear(hidden_size, 4 * hidden_size) #1
         
-        # self.weight_ih = nn.Parameter(torch.randn(4 * hidden_size, input_size))
-        # self.weight_hh = nn.Parameter(torch.randn(4 * hidden_size, hidden_size))
         ln = nn.LayerNorm
         self.layernorm_i = ln(4 * hidden_size, elementwise_affine=False)
         self.layernorm_h = ln(4 * hidden_size, elementwise_affine=False)
@@ -18,8 +20,6 @@ class LayerNormLSTMCell(jit.ScriptModule): #jit.ScriptModule, nn.Module
     def forward(self, input, state):
     # type: (Tensor, Tuple[Tensor, Tensor]) -> Tuple[Tensor, Tensor]
         hx, cx = state
-        # igates = self.layernorm_i(torch.mm(input, self.weight_ih.t()))
-        # hgates = self.layernorm_h(torch.mm(hx, self.weight_hh.t()))
         igates = self.layernorm_i(self.linear_ih(input))
         hgates = self.layernorm_h(self.linear_hh(hx))
 
@@ -31,11 +31,10 @@ class LayerNormLSTMCell(jit.ScriptModule): #jit.ScriptModule, nn.Module
         outgate = torch.sigmoid(outgate)
         cy = self.layernorm_c((forgetgate * cx) + (ingate * cellgate))
         hy = outgate * torch.tanh(cy)
-        
         return hy, cy
 
 class BiLSTM_emb(nn.Module):
-    def __init__(self, input_size):
+    def __init__(self, input_size, char_size):
         super(BiLSTM_emb, self).__init__()
         self.input_size = input_size
         self.embedding = nn.Embedding(char_size, input_size)
@@ -48,15 +47,15 @@ class BiLSTM_emb(nn.Module):
         return h_n.view(-1, 2*self.input_size) #batch_size, 2*hidden_dim
 
 class BiLSTM(nn.Module):
-    def __init__(self, pre_trained, input_size, num_tags, dropout, pre_tr, norm, char_level):
+    def __init__(self, pre_trained, input_size, num_tags, char_size, vocab_size, dropout, pre_tr, norm, char_level):
         super(BiLSTM, self).__init__()
         if pre_tr:
-            self.embedding = nn.Embedding.from_pretrained(pre_trained, freeze=no_fine_tune) #Fine tuning allowed
+            self.embedding = nn.Embedding.from_pretrained(pre_trained, freeze=False) #Fine tuning allowed
         else:
             self.embedding = nn.Embedding(vocab_size, input_size-char_level*50)
         
         if char_level:
-            self.char_embed = BiLSTM_emb(input_size = 25) #input - batch_size, max_batch_len_words
+            self.char_embed = BiLSTM_emb(input_size = 25, char_size=char_size) #input - batch_size, max_batch_len_words
 
         self.dropout = nn.Dropout(p=dropout)
         if norm:
@@ -72,11 +71,10 @@ class BiLSTM(nn.Module):
 
     def forward(self, x): #x - shape(batch_size, max_len of sentences, max_word_len+1), int indices
         word_embT = self.embedding(x[:,:,0])
-        # pdb.set_trace()
         batch_size, max_len = x.shape[0], x.shape[1]
         
         if self.char_level:
-            char_embT = torch.zeros(batch_size, max_len, 50, device=device)
+            char_embT = torch.zeros(batch_size, max_len, 50, device=x.device)
             for i in range(max_len):
                 char_embT[:,i,:] = self.char_embed(x[:,i,1:])
             x = torch.cat((word_embT,char_embT), dim=2)
@@ -85,17 +83,15 @@ class BiLSTM(nn.Module):
         
         input_size = x.shape[2]
 
-        # pdb.set_trace()
         x = self.dropout(x)
-        # pdb.set_trace()
 
         if self.norm:
-            xe = torch.zeros(batch_size, max_len, input_size, device=device) #stores forward hidden states
-            xr = torch.zeros(batch_size, max_len, input_size, device=device) #stores reverse hidden states
-            xrT_t = torch.zeros(batch_size, input_size, device=device)
-            crT_t = torch.zeros(batch_size, input_size, device=device)
-            xet = torch.zeros(batch_size, input_size, device=device)
-            cet = torch.zeros(batch_size, input_size, device=device)
+            xe = torch.zeros(batch_size, max_len, input_size, device=x.device) #stores forward hidden states
+            xr = torch.zeros(batch_size, max_len, input_size, device=x.device) #stores reverse hidden states
+            xrT_t = torch.zeros(batch_size, input_size, device=x.device)
+            crT_t = torch.zeros(batch_size, input_size, device=x.device)
+            xet = torch.zeros(batch_size, input_size, device=x.device)
+            cet = torch.zeros(batch_size, input_size, device=x.device)
             
             # pdb.set_trace()
             for t in range(max_len):
@@ -161,14 +157,14 @@ class CRF(nn.Module):
 
     def _compute_scores(self, emissions, tags, mask):
       batch_size, seq_length = tags.shape
-      scores = torch.zeros(batch_size).to(device)
+      scores = torch.zeros(batch_size, device=emissions.device) #.to(device)
       first_tags = tags[:, 0]
       last_valid_idx = mask.int().sum(1) - 1
       last_tags = tags.gather(1, last_valid_idx.unsqueeze(1)).squeeze()
 
       t_scores = self.transitions[self.BOS_TAG_ID, first_tags]
  
-      e_scores = emissions[:, 0].gather(1, first_tags.unsqueeze(1).to(device)).squeeze()
+      e_scores = emissions[:, 0].gather(1, first_tags.unsqueeze(1).to(emissions.device)).squeeze()
       scores += e_scores + t_scores
       for i in range(1, seq_length):
           is_valid = mask[:, i]
@@ -270,15 +266,15 @@ class CRF(nn.Module):
         return best_path
 
 class BiLSTM_crf(nn.Module):
-    def __init__(self, pre_trained, nb_labels = 17+2, use_hidden_layer= True, dropout = 0.5, pre_tr = True, norm = False, char_level = False, input_size = 100, num_tags=17):
+    def __init__(self, pre_trained, vocab_size, char_size, nb_labels = 17+2, use_hidden_layer= True, dropout = 0.5, pre_tr = True, norm = False, char_level = False, input_size = 100, num_tags=17):
         super(BiLSTM_crf, self).__init__()
         if pre_tr:
-            self.embedding = nn.Embedding.from_pretrained(pre_trained, freeze=no_fine_tune) #Fine tuning allowed
+            self.embedding = nn.Embedding.from_pretrained(pre_trained, freeze=False) #Fine tuning allowed
         else:
             self.embedding = nn.Embedding(vocab_size, input_size-char_level*50)
         
         if char_level:
-            self.char_embed = BiLSTM_emb(input_size = 25) #input - batch_size, max_batch_len_words
+            self.char_embed = BiLSTM_emb(input_size = 25, char_size = char_size) #input - batch_size, max_batch_len_words
 
         self.dropout = nn.Dropout(p=dropout)
         if norm:
@@ -293,7 +289,7 @@ class BiLSTM_crf(nn.Module):
         else:
           self.linear = nn.Linear(input_size*2, nb_labels)
                 
-        self.crf_layer = CRF(nb_labels, 17, 18, batch_first = True).to(device)
+        self.crf_layer = CRF(nb_labels, 17, 18, batch_first = True) #.to(device)
         self.norm = norm
         self.char_level = char_level
 
@@ -303,7 +299,7 @@ class BiLSTM_crf(nn.Module):
         batch_size, max_len = x.shape[0], x.shape[1]
         
         if self.char_level:
-            char_embT = torch.zeros(batch_size, max_len, 50, device=device)
+            char_embT = torch.zeros(batch_size, max_len, 50, device=x.device)
             for i in range(max_len):
                 char_embT[:,i,:] = self.char_embed(x[:,i,1:])
             x = torch.cat((word_embT,char_embT), dim=2)
@@ -316,12 +312,12 @@ class BiLSTM_crf(nn.Module):
         # pdb.set_trace()
 
         if self.norm:
-            xe = torch.zeros(batch_size, max_len, input_size, device=device) #stores forward hidden states
-            xr = torch.zeros(batch_size, max_len, input_size, device=device) #stores reverse hidden states
-            xrT_t = torch.zeros(batch_size, input_size, device=device)
-            crT_t = torch.zeros(batch_size, input_size, device=device)
-            xet = torch.zeros(batch_size, input_size, device=device)
-            cet = torch.zeros(batch_size, input_size, device=device)
+            xe = torch.zeros(batch_size, max_len, input_size, device=x.device) #stores forward hidden states
+            xr = torch.zeros(batch_size, max_len, input_size, device=x.device) #stores reverse hidden states
+            xrT_t = torch.zeros(batch_size, input_size, device=x.device)
+            crT_t = torch.zeros(batch_size, input_size, device=x.device)
+            xet = torch.zeros(batch_size, input_size, device=x.device)
+            cet = torch.zeros(batch_size, input_size, device=x.device)
             
             # pdb.set_trace()
             for t in range(max_len):
@@ -342,12 +338,12 @@ class BiLSTM_crf(nn.Module):
         
         x = self.linear(x)
         mask = (target != -1)
-        mask = mask.int().to(device)
+        mask = mask.int().to(x.device)
 
         if test:
           return self.crf_layer.decode(x, mask = mask)
         else:
-          loss = self.crf_layer(x, target, mask = mask).to(device)
+          loss = self.crf_layer(x, target, mask = mask).to(x.device)
         return x, loss
 
     def init_weights(self):

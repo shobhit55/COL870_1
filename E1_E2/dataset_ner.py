@@ -1,5 +1,8 @@
+import torch
+from torch.utils.data import Dataset, DataLoader
+
 # dataset
-def word2ind(word):
+def word2ind(word, word_idx, char_idx):
     ind = [word_idx[word] if word in word_idx.keys() else 1] #1
     for char in word:
         if char in char_idx.keys():
@@ -10,9 +13,12 @@ def word2ind(word):
     return ind
 
 class NERGmbData(Dataset):
-    def __init__(self, csv_file, root_dir, transform=None):
+    def __init__(self, csv_file, word_idx, char_idx, tag_idx, transform=None):
         self.data_file = open(csv_file).read().split('\n\n')[:-1] # deleting the last empty sentence, pd.read_csv(csv_file, sep=" ", header=None, encoding="latin1").dropna()
-        self.root_dir = root_dir
+        # self.root_dir = root_dir
+        self.word_idx = word_idx
+        self.char_idx = char_idx
+        self.tag_idx = tag_idx
         self.transform = transform
     
     def __len__(self):
@@ -20,12 +26,11 @@ class NERGmbData(Dataset):
     
     def __getitem__(self, idx): #return words and tags indices
         sent = self.data_file[idx].split('\n') #list of words with tags
-        sent_ind = [word2ind(w.split(' ')[0]) for w in sent if w!='']
-        sent_tag_ind = [tag_idx[w.split(' ')[3]] for w in sent if w!='']
+        sent_ind = [word2ind(w.split(' ')[0], self.word_idx, self.char_idx) for w in sent if w!='']
+        sent_tag_ind = [self.tag_idx[w.split(' ')[3]] for w in sent if w!='']
         
         return sent_ind, sent_tag_ind
 
-# https://suzyahyah.github.io/pytorch/2019/07/01/DataLoader-Pad-Pack-Sequence.html
 def pad_collate(batch):
     (xx, yy) = zip(*batch)
     max_len = max([len(x) for x in xx])
@@ -41,9 +46,12 @@ def pad_collate(batch):
     return xx_pad, yy_pad #, x_lens, y_lens
 
 class NERGmbData_test(Dataset):
-    def __init__(self, csv_file, root_dir, transform=None):
+    def __init__(self, csv_file, word_idx, char_idx, tag_idx, transform=None):
         self.data_file = open(csv_file).read().split('\n\n')[:-1] # deleting the last empty sentence, pd.read_csv(csv_file, sep=" ", header=None, encoding="latin1").dropna()
-        self.root_dir = root_dir
+        # self.root_dir = root_dir
+        self.word_idx = word_idx
+        self.char_idx = char_idx
+        self.tag_idx = tag_idx
         self.transform = transform
     
     def __len__(self):
@@ -51,8 +59,8 @@ class NERGmbData_test(Dataset):
     
     def __getitem__(self, idx): #return words and tags indices
         sent = self.data_file[idx].split('\n') #list of words with tags
-        sent_ind = [word2ind(w.split(' ')[0]) for w in sent if w!='']
-        sent_tag_ind = [tag_idx[w.split(' ')[3]] for w in sent if w!='']
+        sent_ind = [word2ind(w.split(' ')[0], self.word_idx, self.char_idx) for w in sent if w!='']
+        sent_tag_ind = [self.tag_idx[w.split(' ')[3]] for w in sent if w!='']
         
         return sent_ind, sent_tag_ind, idx
 

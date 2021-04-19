@@ -1,5 +1,7 @@
 from dataset_ner import NERGmbData, NERGmbData_test
-
+from models_ner import BiLSTM_crf, BiLSTM
+from train_loops_ner import train_model_crf, train_model
+from utils_ner import get_loaders
 
 
 
@@ -53,7 +55,7 @@ torch.cuda.empty_cache()
 train_loader, val_loader, test_loader = get_loaders(batch_size)
 if crf:
     use_hidden_layer = True
-    model = BiLSTM_crf(pre_trained, use_hidden_layer = use_hidden_layer).to(device)
+    model = BiLSTM_crf(pre_trained=pre_trained, use_hidden_layer = use_hidden_layer, vocab_size=vocab_size, char_size=char_size).to(device)
     model = train_model_crf(model, train_loader, val_loader)
 else:
     model = BiLSTM(pre_trained, input_size, num_tags, dropout=dropout, pre_tr=pre_tr, norm=norm, char_level=char_level).to(device)
