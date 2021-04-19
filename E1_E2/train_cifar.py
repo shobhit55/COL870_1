@@ -5,27 +5,27 @@ from datetime import datetime
 import pdb
 import pickle # loading the data
 import gzip
-import torch
-from torch.optim.lr_scheduler import StepLR
-import torchvision
-import matplotlib.pyplot as plt
-import torch.nn as nn
-from torch import nn, optim
-import torch.nn.functional as F
-import torch.utils.data as data   #dataloader
-from torchvision import datasets, transforms
-import numpy as np
-import pandas as pd
-import seaborn as sns
-import json
-import datetime as datetime
-import time
-from pathlib import Path
-from os import getcwd, chdir
-import glob, os, sys, re
-from sklearn.metrics import f1_score
-from model import Resnet, BasicBlockBN
-from earlystop import EarlyStopping
+# import torch
+# from torch.optim.lr_scheduler import StepLR
+# import torchvision
+# import matplotlib.pyplot as plt
+# import torch.nn as nn
+# from torch import nn, optim
+# import torch.nn.functional as F
+# import torch.utils.data as data   #dataloader
+# from torchvision import datasets, transforms
+# import numpy as np
+# import pandas as pd
+# import seaborn as sns
+# import json
+# import datetime as datetime
+# import time
+# from pathlib import Path
+# from os import getcwd, chdir
+# import glob, os, sys, re
+# from sklearn.metrics import f1_score
+# from model import Resnet, BasicBlockBN
+# from earlystop import EarlyStopping
 # from utils import 
 
 # time_now = datetime.now().strftime("%d%b%Y_%H%M%S")
@@ -99,4 +99,5 @@ from earlystop import EarlyStopping
 # logger.close()
 a_file = open("word_idx_from_glove.pkl","rb")
 word_idx = pickle.load(a_file)
+print(word_idx)
 print("scuess")
