@@ -1,8 +1,11 @@
+from dataset_ner import NERGmbData, NERGmbData_test
+
+
+
+
 --initialization [random | glove ] --char_embeddings [ 0 | 1 ] --layer_normalization [ 0 | 1 ] --crf [ 0 | 1 ]
  --output_file <path to the trained model> --data_dir <directory containing data> 
  --glove_embeddings_file <path to file containing glove embeddings> --vocabulary_output_file <path to the file in which vocabulary will be written>
-glove_file
-pre_tr
 
 # ---------------- inputs ------------------
 cont_train = False
@@ -15,6 +18,8 @@ crf = True
 char_level = False
 dropout = 0.5
 epochs = 1
+
+glove_file
 
 batch_size = 128
 no_fine_tune = False
@@ -44,3 +49,12 @@ vocab_size = len(word_idx)
 char_size = len(char_idx)
 #------------------------------------------------------------------
 
+torch.cuda.empty_cache()
+train_loader, val_loader, test_loader = get_loaders(batch_size)
+if crf:
+    use_hidden_layer = True
+    model = BiLSTM_crf(pre_trained, use_hidden_layer = use_hidden_layer).to(device)
+    model = train_model_crf(model, train_loader, val_loader)
+else:
+    model = BiLSTM(pre_trained, input_size, num_tags, dropout=dropout, pre_tr=pre_tr, norm=norm, char_level=char_level).to(device)
+    model, train_loss, valid_loss, train_ac, val_ac, f1_mi_train, f1_ma_train, f1_mi_val, f1_ma_val = train_model(model, train_loader, val_loader)
