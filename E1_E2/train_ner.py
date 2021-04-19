@@ -61,12 +61,12 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # ---------------- inputs ------------------
 
-pre_tr = True #run data header also, if this changed
-norm = False
-crf = True
-char_level = False
+# pre_tr = True #run data header also, if this changed
+# norm = False
+# crf = True
+# char_level = False
 dropout = 0.5
-epochs = 100
+epochs = 1 # ------------------------ change
 
 train_file = data_dir + '/train.txt'
 val_file = data_dir + '/dev.txt'
@@ -74,7 +74,7 @@ val_file = data_dir + '/dev.txt'
 batch_size = 128
 no_fine_tune = False
 input_size = 100 + 50*char_level
-patience = 4
+patience = 5
 lr = 0.001
 optim_key = 'Adam' #'AdaDel' #'SGD', Adam for dropout
 # ----------------------------------
@@ -104,7 +104,7 @@ train_loader, val_loader = get_loaders(batch_size, file_path = train_file, word_
 if crf:
     use_hidden_layer = True
     model = BiLSTM_crf(pre_trained=pre_trained, use_hidden_layer = use_hidden_layer, vocab_size=vocab_size, char_size=char_size).to(device)
-    model = train_model_crf(model, train_loader, val_loader, device=device, path = model_path, optim_key=optim_key, epochs=epochs)
+    model = train_model_crf(model, train_loader, val_loader, device=device, path = model_path, optim_key=optim_key, epochs=epochs, lr=lr, patience=patience)
 else:
     model = BiLSTM(pre_trained, input_size, num_tags, dropout=dropout, pre_tr=pre_tr, norm=norm, char_level=char_level, char_size=char_size, vocab_size=vocab_size).to(device)
-    model, train_loss, valid_loss, train_ac, val_ac, f1_mi_train, f1_ma_train, f1_mi_val, f1_ma_val = train_model(model, train_loader, val_loader, device = device, path = model_path, optim_key=optim_key, epochs=epochs)
+    model = train_model(model, train_loader, val_loader, device=device, path = model_path, optim_key=optim_key, epochs=epochs, lr=lr, patience=patience)

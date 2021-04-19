@@ -58,6 +58,8 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 '''
 
 input_size = 100+50*char_level
+batch_size = 128
+dropout=0
 
 # load dictionaries
 tag_idx = {'O':0, 'B-tim':1, 'I-tim':2, 'B-gpe':3, 'I-gpe':4, 'B-eve':5, 'I-eve':6, 'B-per':7, 'I-per':8, 'B-art':9, 'I-art':10, 'B-org':11, 'I-org':12, 'I-geo':13, 'B-geo':14, 'B-nat':15, 'I-nat':16}
@@ -75,8 +77,8 @@ torch.cuda.empty_cache()
 if crf:
     use_hidden_layer = True
     model = BiLSTM_crf(pre_trained=None, use_hidden_layer = use_hidden_layer, vocab_size=vocab_size, char_size=char_size, pre_tr=pre_tr, norm=norm, char_level=char_level).to(device)
-    model = test_model_crf(model, batch_size=batch_size, device=device, tag_list=tag_list,  output_path=output_file, test_file=test_file, word_idx=word_idx, char_idx=char_idx, tag_idx=tag_idx)
+    test_model_crf(model, batch_size=batch_size, device=device, tag_list=tag_list,  output_path=output_file, test_file=test_file, word_idx=word_idx, char_idx=char_idx, tag_idx=tag_idx)
 else:
-    model = BiLSTM(pre_trained=None, input_size, num_tags, dropout=dropout, pre_tr=pre_tr, norm=norm, char_level=char_level, char_size=char_size, vocab_size=vocab_size).to(device)
+    model = BiLSTM(pre_trained=None, input_size=input_size, num_tags=num_tags, dropout=dropout, pre_tr=pre_tr, norm=norm, char_level=char_level, char_size=char_size, vocab_size=vocab_size).to(device)
     model.load_state_dict(torch.load(model_path))
     test_model_output(model, batch_size=batch_size, device=device, tag_list=tag_list, output_path=output_file, test_file=test_file, word_idx=word_idx, char_idx=char_idx, tag_idx=tag_idx)
