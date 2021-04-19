@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from dataset_ner import NERGmbData_test, NERGmbData
+from dataset_ner import NERGmbData_test, NERGmbData, pad_collate, pad_collate_test
 
 def criterion(output, target): #batch_size, max_len, num_tags; batch_size, max_len
     output = output.view(-1, output.shape[2]) # reshape the tensor
@@ -10,14 +10,14 @@ def criterion(output, target): #batch_size, max_len, num_tags; batch_size, max_l
     target = target[target!=-1]
     return -torch.sum(output[range(output.shape[0]),target])/output.shape[0]
 
-def get_loaders(batch_size, file_path, pad_collate):
-    dataset = NERGmbData(file_path)
+def get_loaders(batch_size, file_path, word_idx, tag_idx, char_idx):
+    dataset = NERGmbData(file_path, word_idx=word_idx, tag_idx=tag_idx, char_idx=char_idx)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, collate_fn=pad_collate, num_workers=2, pin_memory=True)
 
     return dataloader
 
-def get_loader_test(batch_size, file_path, pad_collate_test):
-    test_dataset = NERGmbData_test(file_path)
+def get_loader_test(batch_size, file_path, word_idx, tag_idx, char_idx):
+    test_dataset = NERGmbData_test(file_path, word_idx=word_idx, tag_idx=tag_idx, char_idx=char_idx)
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=pad_collate_test, num_workers=2, pin_memory=True)
 
     return test_dataloader
