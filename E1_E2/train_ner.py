@@ -5,7 +5,51 @@ from train_loops_ner import train_model_crf, train_model
 from utils_ner import get_loaders
 import pickle
 import torch
+import sys
 
+argslist = sys.argv[1:]
+
+for i<len(argslist):
+    if argslist[i]=='--initialization':
+        if argslist[i+1]=='random':
+            pre_tr = False
+        else:
+            pre_tr = True
+    
+    if argslist[i]=='--char_embeddings':
+        if argslist[i+1]=='0':
+            char_level = False
+        else:
+            char_level = True
+
+    if argslist[i]=='--layer_normalization':
+        if argslist[i+1]=='0':
+            norm = False
+        else:
+            norm = True
+
+    if argslist[i]=='--crf':
+        if argslist[i+1]=='0':
+            crf = False
+        else:
+            crf = True
+
+    if argslist[i]=='--output_file':
+        model_path = argslist[i+1]
+
+    if argslist[i]=='--data_dir':
+        data_dir = argslist[i+1]
+
+    if argslist[i]=='--glove_embeddings_file':
+        glove_file = argslist[i+1]
+
+    if argslist[i]=='--vocabulary_output_file':
+        vocab_path = argslist[i+1]
+
+    if argslist[i]=='--vocabulary_output_file':
+        vocab_path = argslist[i+1]
+
+    i+=2
 '''
 --initialization [random | glove ] --char_embeddings [ 0 | 1 ] --layer_normalization [ 0 | 1 ] --crf [ 0 | 1 ]
  --output_file <path to the trained model> --data_dir <directory containing data> 
@@ -15,9 +59,6 @@ import torch
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # ---------------- inputs ------------------
-cont_train = False
-model_folder = '' #'1.1_pre_tr_dropout'
-save_folder = '' #'1.1_pre_tr_dropout_outputtest'
 
 pre_tr = True #run data header also, if this changed
 norm = False
@@ -33,7 +74,7 @@ model_path
 
 batch_size = 128
 no_fine_tune = False
-input_size = 100 +50*char_level
+input_size = 100 + 50*char_level
 patience = 4
 lr = 0.001
 optim_key = 'Adam' #'AdaDel' #'SGD', Adam for dropout
