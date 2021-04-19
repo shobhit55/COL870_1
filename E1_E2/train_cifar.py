@@ -97,6 +97,7 @@ import gzip
 #    pickle.dump(valid_loss, fp)
 
 # logger.close()
+print(".pkl")
 a_file = open("word_idx_from_glove.pkl","rb")
 word_idx = pickle.load(a_file)
 print(word_idx)
