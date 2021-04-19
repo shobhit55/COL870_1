@@ -1,4 +1,4 @@
-from dataset_ner import NERGmbData, NERGmbData_test
+from dataset_ner import NERGmbData
 from dict_save_ner import glove_vocab_save, train_vocab_save, pre_trained_tens
 from models_ner import BiLSTM_crf, BiLSTM
 from train_loops_ner import train_model_crf, train_model
@@ -9,7 +9,8 @@ import sys
 
 argslist = sys.argv[1:]
 
-for i<len(argslist):
+i=0
+while i<len(argslist):
     if argslist[i]=='--initialization':
         if argslist[i+1]=='random':
             pre_tr = False
@@ -67,10 +68,8 @@ char_level = False
 dropout = 0.5
 epochs = 100
 
-glove_file
-train_file
-vocab_path
-model_path
+train_file = data_dir + '/train.txt'
+val_file = data_dir + '/dev.txt'
 
 batch_size = 128
 no_fine_tune = False
@@ -101,7 +100,7 @@ char_size = len(char_idx)
 #------------------------------------------------------------------
 
 torch.cuda.empty_cache()
-train_loader, val_loader = get_loaders(batch_size, file_path = train_file, word_idx = word_idx, tag_idx = tag_idx, char_idx = char_idx)
+train_loader, val_loader = get_loaders(batch_size, file_path = train_file, word_idx = word_idx, tag_idx = tag_idx, char_idx = char_idx), get_loaders(batch_size, file_path = val_file, word_idx = word_idx, tag_idx = tag_idx, char_idx = char_idx)
 if crf:
     use_hidden_layer = True
     model = BiLSTM_crf(pre_trained=pre_trained, use_hidden_layer = use_hidden_layer, vocab_size=vocab_size, char_size=char_size).to(device)

@@ -7,7 +7,7 @@ from utils_ner import EarlyStopping, criterion, accuracy, get_loader_test
 # from seqeval.metrics import f1_score as seq_f1_score
 # from seqeval.scheme import IOB2
 
-def train_model(model, train_loader, val_loader, device, path, optim_key='Adam', patience=7, epochs=75):
+def train_model(model, train_loader, val_loader, device, path, lr, optim_key='Adam', patience=7, epochs=75):
     print("Training Started...")
     #pr = f"char_level = {char_level} | norm = {norm} | pre_tr = {pre_tr} | dropout = {dropout} | r = {num_tags} | epochs = {epochs} | lr = {lr} | optimizer = {optim_key} | batch_size = {batch_size}"
     #save_print(pr, logger)
@@ -135,8 +135,8 @@ def train_model(model, train_loader, val_loader, device, path, optim_key='Adam',
     print("Training Done...")
     return  model #, avg_train_losses, avg_valid_losses, train_ac, val_ac, f1_mi_train, f1_ma_train, f1_mi_val, f1_ma_val
 
-def test_model_output(model, batch_size, device, tag_list, output_path, test_file, dat_kind='Test'): #saves the final metrics for input data 
-    test_loader = get_loader_test(batch_size, test_file)
+def test_model_output(model, batch_size, device, tag_list, output_path, test_file, word_idx, tag_idx, char_idx, dat_kind='Test'): #saves the final metrics for input data 
+    test_loader = get_loader_test(batch_size, test_file, word_idx=word_idx, char_idx=char_idx, tag_idx=tag_idx)
     # pred_tags = []
     # target_tags = []
     model.eval()
@@ -172,7 +172,7 @@ def test_model_output(model, batch_size, device, tag_list, output_path, test_fil
 
     # save_print(f'{dat_kind} Accuracy: {accuracy}, f1_micro: {f1_micro}, f1_macro: {f1_macro}', logger)
 
-def train_model_crf(model, train_loader, val_loader, device, path, optim_key='Adam', patience=7, epochs=75):
+def train_model_crf(model, train_loader, val_loader, device, path, lr, optim_key='Adam', patience=7, epochs=75):
     print("Training Started...on...",device)
     # pr = f"char_level = {char_level} | norm = {norm} | pre_tr = {pre_tr} | dropout = {dropout} | r = {num_tags} | epochs = {epochs} | lr = {lr} | optimizer = {optim_key} | batch_size = {batch_size}"
     # save_print(pr, logger)
@@ -181,16 +181,16 @@ def train_model_crf(model, train_loader, val_loader, device, path, optim_key='Ad
     scheduler = StepLR(optimizer, step_size=25, gamma=0.5)
     if device==torch.device('cuda'):
         torch.cuda.synchronize()
-    train_ac = []
-    val_ac = []
-    f1_mi_train = []
-    f1_ma_train = []
-    f1_mi_val = []
-    f1_ma_val = []
-    train_losses = []
+    # train_ac = []
+    # val_ac = []
+    # f1_mi_train = []
+    # f1_ma_train = []
+    # f1_mi_val = []
+    # f1_ma_val = []
+    # train_losses = []
     valid_losses = []
-    avg_train_losses = []
-    avg_valid_losses = [] 
+    # avg_train_losses = []
+    # avg_valid_losses = [] 
     start_epoch = 1
     # checkpt_folder = FOLDER + '/model_checkpoint.pt'
     early_stopping = EarlyStopping(patience=patience, path = path)
@@ -294,13 +294,13 @@ def train_model_crf(model, train_loader, val_loader, device, path, optim_key='Ad
     #   print()
       scheduler.step()
 
-    model.load_state_dict(torch.load(checkpt_folder))
+    model.load_state_dict(torch.load(path))
     print("Training Done...")
     # return  model, avg_train_losses, avg_valid_losses, train_ac, val_ac, f1_mi_train, f1_ma_train, f1_mi_val, f1_ma_val
     return  model#, avg_train_losses, train_ac, f1_mi_train, f1_ma_train
 
-def test_model_crf(model, batch_size, device, tag_list, output_path, test_file, dat_kind='Test'): #saves the final metrics for input data 
-    test_loader = get_loader_test(batch_size, test_file)
+def test_model_crf(model, batch_size, device, tag_list, output_path, test_file, word_idx, tag_idx, char_idx, dat_kind='Test'): #saves the final metrics for input data 
+    test_loader = get_loader_test(batch_size, test_file, word_idx=word_idx, tag_idx=tag_idx, char_idx=char_idx)
     # pred_tags = []
     # target_tags = []
     data_file = open(test_file).read().split('\n\n')[:-1]
