@@ -1,0 +1,4 @@
+--model_file <path to the trained model> --char_embeddings [ 0 | 1 ] --layer_normalization [ 0 | 1 ] --crf [ 0 | 1 ] 
+--test_data_file <path to a file in the same format as original train file with random  NER / POS tags for each token> 
+--output_file <file in the same format as the test data file with random NER tags replaced with the predictions> 
+--glove_embeddings_file <path to file containing glove embeddings> --vocabulary_input_file <path to the vocabulary file written while training>
