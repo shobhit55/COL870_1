@@ -7,8 +7,12 @@ import pickle
 import torch
 import sys
 
+'''
+--initialization [random | glove ] --char_embeddings [ 0 | 1 ] --layer_normalization [ 0 | 1 ] --crf [ 0 | 1 ]
+ --output_file <path to the trained model> --data_dir <directory containing data> 
+ --glove_embeddings_file <path to file containing glove embeddings> --vocabulary_output_file <path to the file in which vocabulary will be written>
+'''
 argslist = sys.argv[1:]
-
 i=0
 while i<len(argslist):
     if argslist[i]=='--initialization':
@@ -51,11 +55,6 @@ while i<len(argslist):
         vocab_path = argslist[i+1]
 
     i+=2
-'''
---initialization [random | glove ] --char_embeddings [ 0 | 1 ] --layer_normalization [ 0 | 1 ] --crf [ 0 | 1 ]
- --output_file <path to the trained model> --data_dir <directory containing data> 
- --glove_embeddings_file <path to file containing glove embeddings> --vocabulary_output_file <path to the file in which vocabulary will be written>
-'''
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -104,8 +103,8 @@ torch.cuda.empty_cache()
 train_loader, val_loader = get_loaders(batch_size, file_path = train_file, word_idx = word_idx, tag_idx = tag_idx, char_idx = char_idx), get_loaders(batch_size, file_path = val_file, word_idx = word_idx, tag_idx = tag_idx, char_idx = char_idx)
 if crf:
     use_hidden_layer = True
-    model = BiLSTM_crf(pre_trained=pre_trained, use_hidden_layer = use_hidden_layer, vocab_size=vocab_size, char_size=char_size).to(device)
+    model = BiLSTM_crf(pre_trained=pre_trained, input_size=input_size, use_hidden_layer = use_hidden_layer, vocab_size=vocab_size, char_size=char_size, dropout=dropout, pre_tr=pre_tr, norm=norm, char_level=char_level).to(device)
     model = train_model_crf(model, train_loader, val_loader, print_k=print_k, device=device, path = model_path, optim_key=optim_key, epochs=epochs, lr=lr, patience=patience)
 else:
-    model = BiLSTM(pre_trained, input_size, num_tags, dropout=dropout, pre_tr=pre_tr, norm=norm, char_level=char_level, char_size=char_size, vocab_size=vocab_size).to(device)
+    model = BiLSTM(pre_trained, input_size=input_size, num_tags=num_tags, dropout=dropout, pre_tr=pre_tr, norm=norm, char_level=char_level, char_size=char_size, vocab_size=vocab_size).to(device)
     model = train_model(model, train_loader, val_loader, print_k=print_k, device=device, path = model_path, optim_key=optim_key, epochs=epochs, lr=lr, patience=patience)

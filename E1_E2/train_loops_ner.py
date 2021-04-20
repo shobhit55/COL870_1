@@ -3,9 +3,9 @@ import torch
 from torch import nn
 import numpy as np
 from utils_ner import EarlyStopping, criterion, accuracy, get_loader_test
-# from seqeval.metrics import accuracy_score
-# from seqeval.metrics import f1_score as seq_f1_score
-# from seqeval.scheme import IOB2
+from seqeval.metrics import accuracy_score
+from seqeval.metrics import f1_score as seq_f1_score
+from seqeval.scheme import IOB2
 
 def train_model(model, train_loader, val_loader, device, path, lr, print_k=False, optim_key='Adam', patience=7, epochs=75):
     print("Training Started...")
@@ -48,7 +48,7 @@ def train_model(model, train_loader, val_loader, device, path, lr, print_k=False
           output = model(input) #.to(device)
           loss = criterion(output, target)
           if print_k:
-              print(i, loss)
+              print(i, loss.item())
         #   targ1 = target.view(-1)
         #   out1 = output.view(-1,output.shape[2])
         #   out = torch.cat((out, torch.argmax(out1, dim=1)), dim=0) #.to(device)
@@ -80,8 +80,6 @@ def train_model(model, train_loader, val_loader, device, path, lr, print_k=False
           input, target = input.to(device), target.to(device)
           output = model(input) #.to(device)
           loss = criterion(output, target)
-          if print_k:
-              print(loss)
         #   targ1 = target.view(-1)
         #   out1 = output.view(-1,output.shape[2])
         #   out = torch.cat((out, torch.argmax(out1, dim=1)), dim=0) #.to(device)
@@ -139,8 +137,10 @@ def train_model(model, train_loader, val_loader, device, path, lr, print_k=False
 
 def test_model_output(model, batch_size, device, tag_list, output_path, test_file, word_idx, tag_idx, char_idx, dat_kind='Test'): #saves the final metrics for input data 
     test_loader = get_loader_test(batch_size, test_file, word_idx=word_idx, char_idx=char_idx, tag_idx=tag_idx)
-    # pred_tags = []
-    # target_tags = []
+    
+    pred_tags = []
+    target_tags = []
+    
     model.eval()
     data_file = open(test_file).read().split('\n\n')[:-1]
 
@@ -150,8 +150,10 @@ def test_model_output(model, batch_size, device, tag_list, output_path, test_fil
         output = torch.argmax(output, dim=2) #batch, max_len, num_tags -> batch, max_len - output tag indices
 
         for j in range(len(inds)): #over sentences, output.shape[0]
-            # pred_tags.append([])
-            # target_tags.append([])
+
+            pred_tags.append([])
+            target_tags.append([])
+
             sentj = data_file[inds[j]].split('\n')
             for k in range(lengths[j]): #over length of jth sentence
                 wordi = sentj[k].split(' ')
@@ -159,18 +161,22 @@ def test_model_output(model, batch_size, device, tag_list, output_path, test_fil
                     continue
                 wordi[3] = tag_list[output[j][k]] # replace with prediction of kth word of jth sentence
                 sentj[k] = ' '.join(wordi) #string
-                # if target[j,k]!=tag_idx['O']:
-                #     target_tags[-1].append(tag_list[target[j,k]])
-                #     pred_tags[-1].append(tag_list[output[j,k]])
+                
+                if target[j,k]!=tag_idx['O']:
+                    target_tags[-1].append(tag_list[target[j,k]])
+                    pred_tags[-1].append(tag_list[output[j,k]])
+
             data_file[inds[j]] = '\n'.join(sentj)
 
     data_file = '\n\n'.join(data_file)
     text_file = open(output_path, "w")
     text_file.write(data_file)
     text_file.close()
-    # f1_micro = seq_f1_score(target_tags, pred_tags, scheme=IOB2, average='micro')
-    # f1_macro = seq_f1_score(target_tags, pred_tags, scheme=IOB2, average='macro')
-    # accuracy = accuracy_score(target_tags, pred_tags)
+
+    f1_micro = seq_f1_score(target_tags, pred_tags, scheme=IOB2, average='micro')
+    f1_macro = seq_f1_score(target_tags, pred_tags, scheme=IOB2, average='macro')
+    accuracy = accuracy_score(target_tags, pred_tags)
+    print(accuracy, f1_micro, f1_macro)
 
     # save_print(f'{dat_kind} Accuracy: {accuracy}, f1_micro: {f1_micro}, f1_macro: {f1_macro}', logger)
 
@@ -307,8 +313,10 @@ def train_model_crf(model, train_loader, val_loader, device, path, lr, print_k=F
 
 def test_model_crf(model, batch_size, device, tag_list, output_path, test_file, word_idx, tag_idx, char_idx, dat_kind='Test'): #saves the final metrics for input data 
     test_loader = get_loader_test(batch_size, test_file, word_idx=word_idx, tag_idx=tag_idx, char_idx=char_idx)
-    # pred_tags = []
-    # target_tags = []
+    
+    pred_tags = []
+    target_tags = []
+    
     data_file = open(test_file).read().split('\n\n')[:-1]
 
     model.eval()
@@ -317,8 +325,10 @@ def test_model_crf(model, batch_size, device, tag_list, output_path, test_file, 
         scores, output = model(input, target, test = True)
 
         for j in range(len(inds)): #over sentences
-            # pred_tags.append([])
-            # target_tags.append([])
+
+            pred_tags.append([])
+            target_tags.append([])
+            
             sentj = data_file[inds[j]].split('\n')
             for k in range(lengths[j]):
                 wordi = sentj[k].split(' ')
@@ -326,17 +336,19 @@ def test_model_crf(model, batch_size, device, tag_list, output_path, test_file, 
                     continue
                 wordi[3] = tag_list[output[j][k]] # replace with prediction of kth word of jth sentence
                 sentj[k] = ' '.join(wordi) #string
-                # if target[j,k]!=tag_idx['O']:
-                #     target_tags[-1].append(tag_list[target[j,k]])
-                #     pred_tags[-1].append(tag_list[output[j][k]])
+
+                if target[j,k]!=tag_idx['O']:
+                    target_tags[-1].append(tag_list[target[j,k]])
+                    pred_tags[-1].append(tag_list[output[j][k]])
+
             data_file[inds[j]] = '\n'.join(sentj)
 
     data_file = '\n\n'.join(data_file)
     text_file = open(output_path, "w")
     text_file.write(data_file)
     text_file.close()
-    # f1_micro = seq_f1_score(target_tags, pred_tags, scheme=IOB2, average='micro')
-    # f1_macro = seq_f1_score(target_tags, pred_tags, scheme=IOB2, average='macro')
-    # accuracy = accuracy_score(target_tags, pred_tags)
 
-    # save_print(f'{dat_kind} Accuracy: {accuracy}, f1_micro: {f1_micro}, f1_macro: {f1_macro}', logger)
+    f1_micro = seq_f1_score(target_tags, pred_tags, scheme=IOB2, average='micro')
+    f1_macro = seq_f1_score(target_tags, pred_tags, scheme=IOB2, average='macro')
+    accuracy = accuracy_score(target_tags, pred_tags)
+    print(accuracy, f1_micro, f1_macro)
