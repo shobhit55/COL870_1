@@ -48,8 +48,7 @@ def train_vocab_save(train_file, vocab_path):
     for i, char in enumerate(set(data_file)):
         chr_idx[char] = i+2
     
-    vocab = {}
-    vocab['word_idx':train_data_token_dict, 'char_idx':chr_idx]
+    vocab = {'word_idx':train_data_token_dict, 'char_idx':chr_idx}
     a_file = open(vocab_path, "wb")
     pickle.dump(vocab, a_file)
     a_file.close()

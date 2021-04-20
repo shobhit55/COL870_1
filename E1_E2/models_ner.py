@@ -344,7 +344,8 @@ class BiLSTM_crf(nn.Module):
           return self.crf_layer.decode(x, mask = mask)
         else:
           loss = self.crf_layer(x, target, mask = mask).to(x.device)
-        return x, loss
+          scores, pred_tags = self.crf_layer.decode(x, mask = mask)
+          return scores, pred_tags, loss
 
     def init_weights(self):
       for m in self.modules():

@@ -7,7 +7,7 @@ from utils_ner import EarlyStopping, criterion, accuracy, get_loader_test
 # from seqeval.metrics import f1_score as seq_f1_score
 # from seqeval.scheme import IOB2
 
-def train_model(model, train_loader, val_loader, device, path, lr, optim_key='Adam', patience=7, epochs=75):
+def train_model(model, train_loader, val_loader, device, path, lr, print_k=False, optim_key='Adam', patience=7, epochs=75):
     print("Training Started...")
     #pr = f"char_level = {char_level} | norm = {norm} | pre_tr = {pre_tr} | dropout = {dropout} | r = {num_tags} | epochs = {epochs} | lr = {lr} | optimizer = {optim_key} | batch_size = {batch_size}"
     #save_print(pr, logger)
@@ -47,7 +47,8 @@ def train_model(model, train_loader, val_loader, device, path, lr, optim_key='Ad
 
           output = model(input) #.to(device)
           loss = criterion(output, target)
-
+          if print_k:
+              print(i, loss)
         #   targ1 = target.view(-1)
         #   out1 = output.view(-1,output.shape[2])
         #   out = torch.cat((out, torch.argmax(out1, dim=1)), dim=0) #.to(device)
@@ -79,7 +80,8 @@ def train_model(model, train_loader, val_loader, device, path, lr, optim_key='Ad
           input, target = input.to(device), target.to(device)
           output = model(input) #.to(device)
           loss = criterion(output, target)
-
+          if print_k:
+              print(loss)
         #   targ1 = target.view(-1)
         #   out1 = output.view(-1,output.shape[2])
         #   out = torch.cat((out, torch.argmax(out1, dim=1)), dim=0) #.to(device)
@@ -172,7 +174,7 @@ def test_model_output(model, batch_size, device, tag_list, output_path, test_fil
 
     # save_print(f'{dat_kind} Accuracy: {accuracy}, f1_micro: {f1_micro}, f1_macro: {f1_macro}', logger)
 
-def train_model_crf(model, train_loader, val_loader, device, path, lr, optim_key='Adam', patience=7, epochs=75):
+def train_model_crf(model, train_loader, val_loader, device, path, lr, print_k=False, optim_key='Adam', patience=7, epochs=75):
     print("Training Started...on...",device)
     # pr = f"char_level = {char_level} | norm = {norm} | pre_tr = {pre_tr} | dropout = {dropout} | r = {num_tags} | epochs = {epochs} | lr = {lr} | optimizer = {optim_key} | batch_size = {batch_size}"
     # save_print(pr, logger)
@@ -208,6 +210,8 @@ def train_model_crf(model, train_loader, val_loader, device, path, lr, optim_key
           optimizer.zero_grad()
           target = target.long()
           output, loss = model(input, target) #.to(device)
+          if print_k:
+              print(i, loss)
         #   print("---------------------------------")
         #   print(i, loss)
           # loss = criterion(output, target)
@@ -242,6 +246,8 @@ def train_model_crf(model, train_loader, val_loader, device, path, lr, optim_key
           input, target = input.to(device), target.to(device)
           target = target.long()
           output, loss = model(input, target) #.to(device)
+          if print_k:
+              print(loss)
   
         #   targ1 = target.view(-1)
         #   out1 = output.view(-1,output.shape[2])

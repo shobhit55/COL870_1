@@ -66,7 +66,8 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # crf = True
 # char_level = False
 dropout = 0.5
-epochs = 1 # ------------------------ change
+epochs = 100 # ------------------------ change
+print_k = True
 
 train_file = data_dir + '/train.txt'
 val_file = data_dir + '/dev.txt'
@@ -104,7 +105,7 @@ train_loader, val_loader = get_loaders(batch_size, file_path = train_file, word_
 if crf:
     use_hidden_layer = True
     model = BiLSTM_crf(pre_trained=pre_trained, use_hidden_layer = use_hidden_layer, vocab_size=vocab_size, char_size=char_size).to(device)
-    model = train_model_crf(model, train_loader, val_loader, device=device, path = model_path, optim_key=optim_key, epochs=epochs, lr=lr, patience=patience)
+    model = train_model_crf(model, train_loader, val_loader, print_k=print_k, device=device, path = model_path, optim_key=optim_key, epochs=epochs, lr=lr, patience=patience)
 else:
     model = BiLSTM(pre_trained, input_size, num_tags, dropout=dropout, pre_tr=pre_tr, norm=norm, char_level=char_level, char_size=char_size, vocab_size=vocab_size).to(device)
-    model = train_model(model, train_loader, val_loader, device=device, path = model_path, optim_key=optim_key, epochs=epochs, lr=lr, patience=patience)
+    model = train_model(model, train_loader, val_loader, print_k=print_k, device=device, path = model_path, optim_key=optim_key, epochs=epochs, lr=lr, patience=patience)
