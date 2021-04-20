@@ -251,7 +251,7 @@ def train_model_crf(model, train_loader, val_loader, device, path, lr, print_k=F
       for input, target in val_loader:
           input, target = input.to(device), target.to(device)
           target = target.long()
-          output, loss = model(input, target) #.to(device)
+          score, output, loss = model(input, target) #.to(device)
           if print_k:
               print(loss)
   
