@@ -66,7 +66,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # char_level = False
 dropout = 0.5
 epochs = 100 # ------------------------ change
-print_k = True
+print_k = False
 
 train_file = data_dir + '/train.txt'
 val_file = data_dir + '/dev.txt'

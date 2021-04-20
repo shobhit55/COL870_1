@@ -215,7 +215,7 @@ def train_model_crf(model, train_loader, val_loader, device, path, lr, print_k=F
           input, target = input.to(device), target.to(device)
           optimizer.zero_grad()
           target = target.long()
-          output, loss = model(input, target) #.to(device)
+          score, output, loss  = model(input, target) #.to(device)
           if print_k:
               print(i, loss)
         #   print("---------------------------------")

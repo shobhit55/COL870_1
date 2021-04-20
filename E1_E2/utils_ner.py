@@ -12,13 +12,13 @@ def criterion(output, target): #batch_size, max_len, num_tags; batch_size, max_l
 
 def get_loaders(batch_size, file_path, word_idx, tag_idx, char_idx):
     dataset = NERGmbData(file_path, word_idx=word_idx, tag_idx=tag_idx, char_idx=char_idx)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, collate_fn=pad_collate, num_workers=0, pin_memory=True)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, collate_fn=pad_collate, num_workers=2, pin_memory=True)
 
     return dataloader
 
 def get_loader_test(batch_size, file_path, word_idx, tag_idx, char_idx):
     test_dataset = NERGmbData_test(file_path, word_idx=word_idx, tag_idx=tag_idx, char_idx=char_idx)
-    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=pad_collate_test, num_workers=0, pin_memory=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=pad_collate_test, num_workers=2, pin_memory=True)
 
     return test_dataloader
 
@@ -44,7 +44,7 @@ def accuracy(output, target, tag_ind=None): #batch_size, max_len, num_tags; batc
     return float(n_correct), n_total
 
 class EarlyStopping:
-    def __init__(self, path, patience=7, verbose=True, delta=0, trace_func=print):
+    def __init__(self, path, patience=7, verbose=False, delta=0, trace_func=print):
         self.patience = patience
         self.verbose = verbose
         self.counter = 0
@@ -62,7 +62,7 @@ class EarlyStopping:
             self.save_checkpoint(val_loss, model)
         elif score < self.best_score + self.delta:
             self.counter += 1
-            self.trace_func(f'EarlyStopping counter: {self.counter} out of {self.patience}')
+            # self.trace_func(f'EarlyStopping counter: {self.counter} out of {self.patience}')
             if self.counter >= self.patience:
                 self.early_stop = True
         else:
