@@ -5,3 +5,4 @@ conda install pandas
 conda install r-sys
 conda install unicodecsv
 conda install torchvision
+conda install pillow
