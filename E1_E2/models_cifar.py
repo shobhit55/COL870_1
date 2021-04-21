@@ -32,6 +32,7 @@ print(f"Pytorch version: {torch.__version__}")
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 G  =  4
+batch_size = 128
 
 class BN(nn.Module):
   def __init__(self, input_dim, mom=0.9, eps=1e-5): #norm_layer
