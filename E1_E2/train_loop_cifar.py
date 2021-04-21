@@ -22,6 +22,7 @@ import pandas as pd
 # import glob, os, sys, re
 # from sklearn.metrics import f1_score
 from earlystop import EarlyStopping
+from utils_cifar import get_loader_test
 # print(f"Pytorch version: {torch.__version__}")
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
@@ -35,6 +36,7 @@ batch_size = 128
 momentum = 0.9
 start_epoch = 1
 wd = 1e-4
+classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
 def test_model(model, test_loader):
     test_loss = 0.0
@@ -80,6 +82,46 @@ def test_model(model, test_loader):
     save_print(f'Test Accuracy (Overall): {t} {np.sum(class_correct)}/{np.sum(class_total)}',logger)
     
     return l1,l2
+
+def test_model_output(model, test_file, output_file, transform, batch_size):
+    # test_loss = 0.0
+    # class_correct = list(0. for i in range(10))
+    # class_total = list(0. for i in range(10))
+    # correct = 0
+    # l1 = []
+    # l2 = []
+    test_loader = get_loader_test(batch_size = batch_size, transform_test=transform, test_file=test_file)
+    output_text = []
+    model.eval()
+    for data, inds in test_loader:
+        if data.shape[0]!=batch_size:
+            break
+        data = data.to(device)
+        output = model(data).to(device)
+        # loss = criterion(output, target)
+        # test_loss += loss.item()*data.size(0)
+        _, pred = torch.max(output, 1)
+        # pdb.set_trace()
+        for j in range(len(pred)):
+            # print(inds[j])
+            output_text.append(classes[pred[j]])
+        # correct_tensor = pred.eq(target.data.view_as(pred))
+        # correct = np.squeeze(correct_tensor.cpu().numpy())
+        # correct += (pred == target).sum().cpu()
+        # l1.extend(target.data.cpu())
+        # l2.extend(pred.data.cpu())
+        # for i in range(len(target.data)):
+            # print(i, target.data[i])
+            # l = target.data[i]
+            # class_correct[l] += correct[i].item()
+            # class_total[l] += 1
+            # precision[l] =
+            # recall[l] = 
+
+    output_text = '\n'.join(output_text)
+    text_file = open(output_file, "w")
+    text_file.write(output_text)
+    text_file.close()
 
 def train_model(model, train_loader, val_loader, checkpt_folder, key):
     print("Training Started...")    

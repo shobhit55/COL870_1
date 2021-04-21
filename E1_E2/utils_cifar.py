@@ -12,6 +12,7 @@ from torchvision import datasets, transforms
 from torchvision.utils import save_image
 import numpy as np
 import pandas as pd
+from PIL import Image
 # import matplotlib.pyplot as plt
 # import matplotlib.ticker as ticker
 # import json
@@ -44,7 +45,7 @@ def get_microF1(actual, probs):
 def get_loaders(data_dir, batch_size, transform_train, transform_test):
   print("Getting DataLoaders...")
   cifar_train = torchvision.datasets.CIFAR10(root=data_dir, train=True, download=True, transform=transform_train)
-  cifar_train, cifar_val, _= torch.utils.data.random_split(cifar_train, [512, 128, 49360]) # change
+  cifar_train, cifar_val= torch.utils.data.random_split(cifar_train, [40000, 10000]) # change
   # cifar_val = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
   cifar_test = torchvision.datasets.CIFAR10(root=data_dir, train=False, download=False, transform=transform_test)
   # a,b = cifar_train.__getitem__(0)
@@ -55,6 +56,30 @@ def get_loaders(data_dir, batch_size, transform_train, transform_test):
   cifar_test_loader = torch.utils.data.DataLoader(cifar_test, batch_size=batch_size, shuffle=True, num_workers=2)
   
   return  cifar_train_loader, cifar_val_loader , cifar_test_loader 
+
+class dataset_test(data.Dataset):
+    def __init__(self, csv_file, transform=None):
+        self.data_file = pd.read_csv(csv_file, sep=",", header=None)
+        self.transform = transform
+    
+    def __len__(self):
+        return len(self.data_file)
+    
+    def __getitem__(self, index): #return words and tags indices
+        x = self.data_file.iloc[index].values.tolist()
+        x = np.asarray(x)
+        x = np.reshape(x, (3,32,32) )
+        
+        if self.transform:
+            x = Image.fromarray(x.astype(np.uint8).transpose(1,2,0))
+            x = self.transform(x)
+
+        return x, index
+
+def get_loader_test(batch_size, transform_test, test_file):
+    test_dataset = dataset_test(test_file, transform_test)
+    cifar_test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
+    return cifar_test_loader
 
 def plot_confusion(confusion, folder, save = True):
   if isinstance(confusion, torch.Tensor):
