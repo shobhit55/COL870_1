@@ -1,34 +1,29 @@
 import pdb
 import pickle # loading the data
-import gzip
+# import gzip
 import torch
 from torch.optim.lr_scheduler import StepLR
 import torchvision
-import matplotlib.pyplot as plt
 import torch.nn as nn
 from torch import nn, optim
 import torch.nn.functional as F
 import torch.utils.data as data   #dataloader
 from torchvision import datasets, transforms
-from torchvision.utils import save_image
+# from torchvision.utils import save_image
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
-import networkx
-import seaborn as sns
-import plotly.offline
-from tqdm import tqdm
-import json
-import datetime as datetime
-import time
-from pathlib import Path
-from os import getcwd, chdir
-import glob, os, sys, re
-import cv2
-from PIL import Image
-from sklearn.metrics import f1_score
-print(f"Pytorch version: {torch.__version__}")
+# import networkx
+# from tqdm import tqdm
+# import json
+# import datetime as datetime
+# import time
+# from pathlib import Path
+# from os import getcwd, chdir
+# import glob, os, sys, re
+# import cv2
+# from PIL import Image
+# from sklearn.metrics import f1_score
+# print(f"Pytorch version: {torch.__version__}")
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 G  =  4
@@ -206,31 +201,31 @@ class BasicBlockBN(nn.Module):
         self.conv1 = nn.Conv2d(input_dim, output_dim, kernel_size=3, stride=stride, padding=1, bias = False)
         self.conv2 = nn.Conv2d(output_dim, output_dim, kernel_size=3, stride=1, padding=1, bias = False)
         self.norm_layer = norm_layer
-        print("block")
+        # print("block")
         if self.norm_layer!='nn':
           if self.norm_layer == 'torch_bn':
-            print("in bn")
+            # print("in bn")
             self.bn1 = nn.BatchNorm2d(output_dim).to(device)
             self.bn2 = nn.BatchNorm2d(output_dim).to(device)
           else:
             if self.norm_layer=="bn":
-              print(self.norm_layer)
+              # print(self.norm_layer)
               self.bn1 = BN(input_dim=output_dim).to(device)
               self.bn2= BN(input_dim=output_dim).to(device)
             elif self.norm_layer=="in":
-              print(self.norm_layer)
+              # print(self.norm_layer)
               self.bn1 = IN(input_dim=output_dim).to(device)
               self.bn2 = IN(input_dim=output_dim).to(device)
             elif self.norm_layer=="bin":
-              print(self.norm_layer)
+              # print(self.norm_layer)
               self.bn1 = BIN(input_dim=output_dim).to(device)
               self.bn2 = BIN(input_dim=output_dim).to(device)
             elif self.norm_layer=="ln":
-              print(self.norm_layer)
+              # print(self.norm_layer)
               self.bn1 = LN(input_dim=output_dim).to(device)
               self.bn2 = LN(input_dim=output_dim).to(device)
             elif self.norm_layer=="gn":
-              print(self.norm_layer)
+              # print(self.norm_layer)
               self.bn1 = GN(input_dim=output_dim,G=G).to(device)
               self.bn2 = GN(input_dim=output_dim,G=G).to(device)
     
@@ -267,26 +262,26 @@ class Resnet(nn.Module):
         super(Resnet, self).__init__()
         self.conv1 = nn.Conv2d(input_dim, 16, kernel_size = 3, stride=1, padding=1, bias = False) #32x32 output # Random crop left
         self.norm_layer = norm_layer
-        print("R")
+        # print("R")
         if self.norm_layer!='nn':
           if self.norm_layer == 'torch_bn':
-            print("in bn")
+            # print("in bn")
             self.bn1 = nn.BatchNorm2d(16).to(device)
           else:
             if self.norm_layer=="bn":
-              print(self.norm_layer)
+              # print(self.norm_layer)
               self.bn1 = BN(input_dim=16).to(device)
             elif self.norm_layer=="in":
-              print(self.norm_layer)
+              # print(self.norm_layer)
               self.bn1 = IN(input_dim=16).to(device)
             elif self.norm_layer=="bin":
-              print(self.norm_layer)
+              # print(self.norm_layer)
               self.bn1 = BIN(input_dim=16).to(device)
             elif self.norm_layer=="ln":
-              print(self.norm_layer)
+              # print(self.norm_layer)
               self.bn1 = LN(input_dim=16).to(device)
             elif self.norm_layer=="gn":
-              print(self.norm_layer)
+              # print(self.norm_layer)
               self.bn1 = GN(input_dim=16, G=G).to(device)
 
         self.relu1 = nn.ReLU(inplace = True)
@@ -299,26 +294,26 @@ class Resnet(nn.Module):
         self.fea = None
 
     def layer(self, input_dim, output_dim, block, num_blocks, stride=2):
-        print("layer")
+        # print("layer")
         if self.norm_layer!='nn':
           if self.norm_layer == 'torch_bn':
-            print("in bn")
+            # print("in bn")
             bn = nn.BatchNorm2d(output_dim).to(device)
           else:
             if self.norm_layer =="bn":
-              print(self.norm_layer)
+              # print(self.norm_layer)
               bn = BN(input_dim=output_dim).to(device)
             elif self.norm_layer =="in":
-              print(self.norm_layer)
+              # print(self.norm_layer)
               bn = IN(input_dim=output_dim).to(device)
             elif self.norm_layer =="bin":
-              print(self.norm_layer)
+              # print(self.norm_layer)
               bn = BIN(input_dim=output_dim).to(device)
             elif self.norm_layer =="ln":
-              print(self.norm_layer)
+              # print(self.norm_layer)
               bn = LN(input_dim=output_dim).to(device)
             elif self.norm_layer =="gn":
-              print(self.norm_layer)
+              # print(self.norm_layer)
               bn = GN(input_dim=output_dim,G=G).to(device)
 
         if stride!=1:
@@ -354,9 +349,11 @@ class Resnet(nn.Module):
     def pr(self):
       for m in self.modules():
         if isinstance(m, nn.Conv2d):
-          print(m.weight)
+          continue
+          # print(m.weight)
         if isinstance(m, nn.Linear):
-          print(m.weight)
+          continue
+          # print(m.weight)
     
     def get_fea(self):
       return self.fea
@@ -373,5 +370,6 @@ class Resnet(nn.Module):
         x = self.pool_out(x).to(device)
         x = x.view(-1,64)
         self.fea = x.clone().detach().cpu()
+        # pdb.set_trace()
         x = self.fc_out_layer(x)
         return x

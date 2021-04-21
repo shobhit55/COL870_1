@@ -1,12 +1,12 @@
 import argparse
-from datetime import datetime
+# from datetime import datetime
 import pdb
 import pickle # loading the data
-import gzip
+# import gzip
 import torch
 from torch.optim.lr_scheduler import StepLR
 import torchvision
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import torch.nn as nn
 from torch import nn, optim
 import torch.nn.functional as F
@@ -14,21 +14,20 @@ import torch.utils.data as data   #dataloader
 from torchvision import datasets, transforms
 import numpy as np
 import pandas as pd
-import seaborn as sns
-import json
-import datetime as datetime
-import time
-from pathlib import Path
-from os import getcwd, chdir
-import glob, os, sys, re
-from sklearn.metrics import f1_score
+# import json
+# import datetime as datetime
+# import time
+# from pathlib import Path
+# from os import getcwd, chdir
+# import glob, os, sys, re
+# from sklearn.metrics import f1_score
 from earlystop import EarlyStopping
-print(f"Pytorch version: {torch.__version__}")
+# print(f"Pytorch version: {torch.__version__}")
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 
 epochs = 100
-patience = 30
+patience = 7
 lr = 0.1
 optim_key = "SGD"
 criterion = nn.CrossEntropyLoss()
@@ -84,8 +83,8 @@ def test_model(model, test_loader):
 
 def train_model(model, train_loader, val_loader, checkpt_folder, key):
     print("Training Started...")    
-    pr = f"patience = {patience} | epochs = {epochs} | lr = {lr} | momentum = {momentum} | wd = {wd} | batch_size = {batch_size}"
-    print(pr)
+    # pr = f"patience = {patience} | epochs = {epochs} | lr = {lr} | momentum = {momentum} | wd = {wd} | batch_size = {batch_size}"
+    # print(pr)
     optimizer_dict = { "Adam": torch.optim.Adam(model.parameters(), lr = lr), "SGD": torch.optim.SGD(model.parameters(), lr = lr) }  
     
     if key == 'nn':
@@ -109,7 +108,7 @@ def train_model(model, train_loader, val_loader, checkpt_folder, key):
     percentile_99=[]
     early_stopping = EarlyStopping(patience=patience, path = checkpt_folder, verbose=True)
     for epoch in range(start_epoch, epochs+1):
-      since = time.time()
+    #   since = time.time()
       train_loss = 0
       correct = 0
       total = 0
@@ -147,27 +146,27 @@ def train_model(model, train_loader, val_loader, checkpt_folder, key):
       percentile_80.append(np.percentile(fea_list,80))
       percentile_99.append(np.percentile(fea_list,99))
       
-      print("-----------------------------------------------------------")
-      p_msg = (f'[{epoch:>{epoch_len}}/{epochs:>{epoch_len}}] ' +
-                    f'train_loss: {train_loss:.5f} ' +
-                    f'valid_loss: {valid_loss:.5f}')
+    #   print("-----------------------------------------------------------")
+    #   p_msg = (f'[{epoch:>{epoch_len}}/{epochs:>{epoch_len}}] ' +
+    #                 f'train_loss: {train_loss:.5f} ' +
+    #                 f'valid_loss: {valid_loss:.5f}')
       
-      print(p_msg)
+    #   print(p_msg)
       train_losses = []
       valid_losses = []
-      total_norm = 0
-      for p in model.parameters():
-        param_norm = p.grad.data.norm(2)
-        total_norm += param_norm.item() ** 2
-      total_norm = total_norm ** (1. / 2)
-      print("total_gradient_norm:", total_norm)
+    #   total_norm = 0
+    #   for p in model.parameters():
+    #     param_norm = p.grad.data.norm(2)
+    #     total_norm += param_norm.item() ** 2
+    #   total_norm = total_norm ** (1. / 2)
+    #   print("total_gradient_norm:", total_norm)
       early_stopping(valid_loss, model)
       if early_stopping.early_stop:
           print("Early stopping")
           break
-      time_elapsed = time.time() - since
-      print('Epoch complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
-      print()
+    #   time_elapsed = time.time() - since
+    #   print('Epoch complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
+    #   print()
       scheduler.step()
     
     model.load_state_dict(torch.load(checkpt_folder))

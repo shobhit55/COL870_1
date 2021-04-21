@@ -1,9 +1,9 @@
-import pdb
+# import pdb
 import pickle # loading the data
-import gzip
+# import gzip
 import torch
 import torchvision
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import torch.nn as nn
 from torch import nn, optim
 import torch.nn.functional as F
@@ -12,14 +12,14 @@ from torchvision import datasets, transforms
 from torchvision.utils import save_image
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
-import json
-import datetime as datetime
-import time
-from pathlib import Path
-from os import getcwd, chdir
-import glob, os, sys, re
+# import matplotlib.pyplot as plt
+# import matplotlib.ticker as ticker
+# import json
+# import datetime as datetime
+# import time
+# from pathlib import Path
+# from os import getcwd, chdir
+# import glob, os, sys, re
 
 
 def get_accuracy(actual, probs, a=1):
@@ -44,7 +44,7 @@ def get_microF1(actual, probs):
 def get_loaders(data_dir, batch_size, transform_train, transform_test):
   print("Getting DataLoaders...")
   cifar_train = torchvision.datasets.CIFAR10(root=data_dir, train=True, download=True, transform=transform_train)
-  cifar_train, cifar_val = torch.utils.data.random_split(cifar_train, [40000, 10000])
+  cifar_train, cifar_val, _= torch.utils.data.random_split(cifar_train, [512, 128, 49360]) # change
   # cifar_val = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
   cifar_test = torchvision.datasets.CIFAR10(root=data_dir, train=False, download=False, transform=transform_test)
   # a,b = cifar_train.__getitem__(0)

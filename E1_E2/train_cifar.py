@@ -1,14 +1,13 @@
 #Train and test CIFAR with pytorch’s inbuilt batch normalization and 14 layers
 # python3 train_cifar.py --normalization torch_bn --n 2 --data_dir  ../data/cifar-10-batches-py --output_file trained_models_cifar/part_1.1.pth
 import argparse
-from datetime import datetime
-import pdb
+# from datetime import datetime
+# import pdb
 import pickle # loading the data
-import gzip
+# import gzip
 import torch
 from torch.optim.lr_scheduler import StepLR
 import torchvision
-import matplotlib.pyplot as plt
 import torch.nn as nn
 from torch import nn, optim
 import torch.nn.functional as F
@@ -16,19 +15,19 @@ import torch.utils.data as data   #dataloader
 from torchvision import datasets, transforms
 import numpy as np
 import pandas as pd
-import seaborn as sns
-import json
-import datetime as datetime
-import time
-from pathlib import Path
-from os import getcwd, chdir
-import glob, os, sys, re
-from sklearn.metrics import f1_score
+import os
+# import json
+# import datetime as datetime
+# import time
+# from pathlib import Path
+# from os import getcwd, chdir
+# import glob, os, sys, re
+# from sklearn.metrics import f1_score
 from models_cifar import Resnet, BasicBlockBN
 from earlystop import EarlyStopping
 from utils_cifar import get_loaders
 from train_loop_cifar import train_model, test_model
-print(f"Pytorch version: {torch.__version__}")
+# print(f"Pytorch version: {torch.__version__}")
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 #*------------------------------------------------------------*
