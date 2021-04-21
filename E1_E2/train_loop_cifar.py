@@ -22,10 +22,10 @@ from pathlib import Path
 from os import getcwd, chdir
 import glob, os, sys, re
 from sklearn.metrics import f1_score
-from model import Resnet, BasicBlockBN
 from earlystop import EarlyStopping
-from utils_cifar import get_loaders
-from train_loop_cifar import train_model
+print(f"Pytorch version: {torch.__version__}")
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(device)
 
 epochs = 100
 patience = 30
@@ -84,7 +84,7 @@ def test_model(model, test_loader):
 
 def train_model(model, train_loader, val_loader, checkpt_folder, key):
     print("Training Started...")    
-    pr = f"n = {n} |  r = {r} | patience = {patience} | epochs = {epochs} | lr = {lr} | optim_key = {optim_key}| momentum = {momentum} | wd = {wd} | batch_size = {batch_size} | G = {G}"
+    pr = f"patience = {patience} | epochs = {epochs} | lr = {lr} | momentum = {momentum} | wd = {wd} | batch_size = {batch_size}"
     print(pr)
     optimizer_dict = { "Adam": torch.optim.Adam(model.parameters(), lr = lr), "SGD": torch.optim.SGD(model.parameters(), lr = lr) }  
     
@@ -93,8 +93,9 @@ def train_model(model, train_loader, val_loader, checkpt_folder, key):
     else:
         optimizer = torch.optim.SGD(model.parameters(), lr = lr, momentum = momentum)
     
-    scheduler = StepLR(optimizer, step_size=50, gamma=gamma)
-    torch.cuda.synchronize()
+    scheduler = StepLR(optimizer, step_size=50, gamma=0.1)
+    if device  == 'cuda':
+        torch.cuda.synchronize()
     acc = []
     train_losses = []
     valid_losses = []

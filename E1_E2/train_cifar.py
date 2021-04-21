@@ -28,7 +28,9 @@ from models_cifar import Resnet, BasicBlockBN
 from earlystop import EarlyStopping
 from utils_cifar import get_loaders
 from train_loop_cifar import train_model, test_model
-
+print(f"Pytorch version: {torch.__version__}")
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(device)
 #*------------------------------------------------------------*
 
 transform_train = transforms.Compose([
@@ -46,11 +48,12 @@ transform_test = transforms.Compose([
 
 #*------------------------------------------------------------*
 
-time_now = datetime.now().strftime("%d%b%Y_%H%M%S")
-default_path = os.path.join(Path().cwd(), time_now)
+default_path = os.getcwd()
 classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 r = len(classes)
 num_classes = r
+batch_size = 128
+
 
 parser = argparse.ArgumentParser(description = 'Argument parser to automate experiments-running process.')
 parser.add_argument('-norm', '--normalization', type = str, default = 'torch_bn', action = 'store')  # [ bn | in | bin | ln | gn | nn | torch_bn] 
@@ -59,13 +62,13 @@ parser.add_argument('-d', '--data_dir', type = str, default = './data', action =
 parser.add_argument('-f', '--output_file', type = str, default = default_path, action = 'store')
 args = parser.parse_args()
 
+
 norm_key = args.normalization
 n = args.n
 data_dir = args.data_dir
 checkpt_folder = args.output_file
 
-FOLDER = os.getcwd()
-pr = f"n = {n} |  r = {r}  | epochs = {epochs} | lr = {lr} | batch_size = {batch_size} | NL = {norm_ley}"
+pr = f"n = {n} |  r = {r}  | data_dir = {data_dir} |  output_file = {checkpt_folder}   |NL = {norm_key}"
 print(pr)
 
 if device == 'cuda':

@@ -201,35 +201,36 @@ class GN(nn.Module):
 
 
 class BasicBlockBN(nn.Module):
-    def __init__(self, input_dim, output_dim, identity_downsample = None, stride=1, norm_layer = None):
+    def __init__(self, input_dim, output_dim, identity_downsample = None, stride=1, norm_layer = 'torch_bn'):
         super(BasicBlockBN, self).__init__()
         self.conv1 = nn.Conv2d(input_dim, output_dim, kernel_size=3, stride=stride, padding=1, bias = False)
         self.conv2 = nn.Conv2d(output_dim, output_dim, kernel_size=3, stride=1, padding=1, bias = False)
+        self.norm_layer = norm_layer
         print("block")
-        if norm_layer != 'nn':
-          if norm_layer == None:
-            print('torch bn')
+        if self.norm_layer!='nn':
+          if self.norm_layer == 'torch_bn':
+            print("in bn")
             self.bn1 = nn.BatchNorm2d(output_dim).to(device)
             self.bn2 = nn.BatchNorm2d(output_dim).to(device)
           else:
-            if norm_layer=="bn":
-              print(norm_layer)
+            if self.norm_layer=="bn":
+              print(self.norm_layer)
               self.bn1 = BN(input_dim=output_dim).to(device)
               self.bn2= BN(input_dim=output_dim).to(device)
-            elif norm_layer=="in":
-              print(norm_layer)
+            elif self.norm_layer=="in":
+              print(self.norm_layer)
               self.bn1 = IN(input_dim=output_dim).to(device)
               self.bn2 = IN(input_dim=output_dim).to(device)
-            elif norm_layer=="bin":
-              print(norm_layer)
+            elif self.norm_layer=="bin":
+              print(self.norm_layer)
               self.bn1 = BIN(input_dim=output_dim).to(device)
               self.bn2 = BIN(input_dim=output_dim).to(device)
-            elif norm_layer=="ln":
-              print(norm_layer)
+            elif self.norm_layer=="ln":
+              print(self.norm_layer)
               self.bn1 = LN(input_dim=output_dim).to(device)
               self.bn2 = LN(input_dim=output_dim).to(device)
-            elif norm_layer=="gn":
-              print(norm_layer)
+            elif self.norm_layer=="gn":
+              print(self.norm_layer)
               self.bn1 = GN(input_dim=output_dim,G=G).to(device)
               self.bn2 = GN(input_dim=output_dim,G=G).to(device)
     
@@ -240,19 +241,20 @@ class BasicBlockBN(nn.Module):
     def init_weights(self):
       for m in self.modules():
         if isinstance(m, nn.Conv2d):
-          nn.init.kaiming_uniform_(m.weight)
+          # nn.init.kaiming_uniform_(m.weight)
+          nn.init.xavier_uniform_(m.weight, gain = 5)
         if isinstance(m, nn.Linear):
           nn.init.kaiming_uniform_(m.weight)
-          nn.init.constant_(m.bias,0)
+          # nn.init.constant_(m.bias,0)
       
     def forward(self, x):
         input = x.to(device)
         x = self.conv1(x)
-        if norm_layer != 'nn':
+        if self.norm_layer!='nn':
           x = self.bn1(x).to(device)
         x = self.relu(x)
         x = self.conv2(x)
-        if norm_layer != 'nn':
+        if self.norm_layer!='nn':
           x = self.bn2(x).to(device)
         if self.identity_downsample is not None:
             input = self.identity_downsample(input).to(device)
@@ -266,24 +268,24 @@ class Resnet(nn.Module):
         self.conv1 = nn.Conv2d(input_dim, 16, kernel_size = 3, stride=1, padding=1, bias = False) #32x32 output # Random crop left
         self.norm_layer = norm_layer
         print("R")
-        if norm_layer != 'nn':
-          if norm_layer == None:
-            print("torch bn")
+        if self.norm_layer!='nn':
+          if self.norm_layer == 'torch_bn':
+            print("in bn")
             self.bn1 = nn.BatchNorm2d(16).to(device)
           else:
-            if norm_layer=="bn":
+            if self.norm_layer=="bn":
               print(self.norm_layer)
               self.bn1 = BN(input_dim=16).to(device)
-            elif norm_layer=="in":
+            elif self.norm_layer=="in":
               print(self.norm_layer)
               self.bn1 = IN(input_dim=16).to(device)
-            elif norm_layer=="bin":
+            elif self.norm_layer=="bin":
               print(self.norm_layer)
               self.bn1 = BIN(input_dim=16).to(device)
-            elif norm_layer=="ln":
+            elif self.norm_layer=="ln":
               print(self.norm_layer)
               self.bn1 = LN(input_dim=16).to(device)
-            elif norm_layer=="gn":
+            elif self.norm_layer=="gn":
               print(self.norm_layer)
               self.bn1 = GN(input_dim=16, G=G).to(device)
 
@@ -293,15 +295,14 @@ class Resnet(nn.Module):
         self.layer3 = self.layer(32, 64, block, n_layers) #8x8 output, 64channels
         self.pool_out = nn.AvgPool2d(kernel_size=8) #1x1 output, 64 channels
         self.fc_out_layer = nn.Linear(64,num_classes) # fully connected output layer
-        self.init_weights() #### update this
+        self.init_weights()
         self.fea = None
 
     def layer(self, input_dim, output_dim, block, num_blocks, stride=2):
         print("layer")
-        if use_bn:
-
-          if self.norm_layer != 'nn':
-            print("torch bn")
+        if self.norm_layer!='nn':
+          if self.norm_layer == 'torch_bn':
+            print("in bn")
             bn = nn.BatchNorm2d(output_dim).to(device)
           else:
             if self.norm_layer =="bn":
@@ -323,7 +324,7 @@ class Resnet(nn.Module):
         if stride!=1:
           cov = nn.Conv2d(input_dim, output_dim, kernel_size=1, stride=2, bias =False)
           nn.init.kaiming_uniform_(cov.weight)
-          if norm_layer != 'nn':
+          if self.norm_layer!='nn':
             identity_downsample_1 = nn.Sequential(
                                                     cov,
                                                     bn
@@ -346,10 +347,9 @@ class Resnet(nn.Module):
     def init_weights(self):
       for m in self.modules():
         if isinstance(m, nn.Conv2d):
-          nn.init.kaiming_uniform_(m.weight)
-        if isinstance(m, nn.Linear):
-          nn.init.kaiming_uniform_(m.weight)
-          nn.init.constant_(m.bias,0)
+          # nn.init.kaiming_uniform_(m.weight)
+          nn.init.xavier_uniform_(m.weight, gain = 2)
+
 
     def pr(self):
       for m in self.modules():
@@ -357,22 +357,21 @@ class Resnet(nn.Module):
           print(m.weight)
         if isinstance(m, nn.Linear):
           print(m.weight)
+    
     def get_fea(self):
       return self.fea
-    def forward(self, x):
 
-        x = x.to(device)
+    def forward(self, x):
         x = self.conv1(x)
-        if norm_layer != 'nn':
-          x = self.bn1(x).to(device)
+        if self.norm_layer!='nn':
+          x = self.bn1(x).to(device)          
         x = self.relu1(x)
         x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
-
+        # self.fea = self.fea.detach().cpu()
         x = self.pool_out(x).to(device)
         x = x.view(-1,64)
         self.fea = x.clone().detach().cpu()
-        
         x = self.fc_out_layer(x)
         return x
