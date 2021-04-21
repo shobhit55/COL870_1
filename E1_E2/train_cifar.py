@@ -24,7 +24,7 @@ from pathlib import Path
 from os import getcwd, chdir
 import glob, os, sys, re
 from sklearn.metrics import f1_score
-from model import Resnet, BasicBlockBN
+from models_cifar import Resnet, BasicBlockBN
 from earlystop import EarlyStopping
 from utils_cifar import get_loaders
 from train_loop_cifar import train_model, test_model
