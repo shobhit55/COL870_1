@@ -266,7 +266,7 @@ class CRF(nn.Module):
         return best_path
 
 class BiLSTM_crf(nn.Module):
-    def __init__(self, pre_trained, vocab_size, char_size, nb_labels = 17+2, use_hidden_layer= True, dropout = 0.5, pre_tr = True, norm = False, char_level = False, input_size = 100, num_tags=17):
+    def __init__(self, pre_trained, input_size, vocab_size, char_size, nb_labels = 17+2, use_hidden_layer= True, dropout = 0.5, pre_tr = True, norm = False, char_level = False, num_tags=17):
         super(BiLSTM_crf, self).__init__()
         if pre_tr:
             self.embedding = nn.Embedding.from_pretrained(pre_trained, freeze=False) #Fine tuning allowed
@@ -344,7 +344,8 @@ class BiLSTM_crf(nn.Module):
           return self.crf_layer.decode(x, mask = mask)
         else:
           loss = self.crf_layer(x, target, mask = mask).to(x.device)
-        return x, loss
+          scores, pred_tags = self.crf_layer.decode(x, mask = mask)
+          return scores, pred_tags, loss
 
     def init_weights(self):
       for m in self.modules():

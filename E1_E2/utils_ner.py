@@ -12,13 +12,13 @@ def criterion(output, target): #batch_size, max_len, num_tags; batch_size, max_l
 
 def get_loaders(batch_size, file_path, word_idx, tag_idx, char_idx):
     dataset = NERGmbData(file_path, word_idx=word_idx, tag_idx=tag_idx, char_idx=char_idx)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, collate_fn=pad_collate, num_workers=0, pin_memory=True)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, collate_fn=pad_collate, num_workers=2, pin_memory=True)
 
     return dataloader
 
 def get_loader_test(batch_size, file_path, word_idx, tag_idx, char_idx):
     test_dataset = NERGmbData_test(file_path, word_idx=word_idx, tag_idx=tag_idx, char_idx=char_idx)
-    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=pad_collate_test, num_workers=0, pin_memory=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=pad_collate_test, num_workers=2, pin_memory=True)
 
     return test_dataloader
 
@@ -75,4 +75,3 @@ class EarlyStopping:
         if self.verbose:
             self.trace_func(f'Validation loss decreased {self.val_loss_min:.6f} --> {val_loss:.6f}.  Saving model ...')
         self.val_loss_min = val_loss
-        print(self.val_loss_min, self.path)
