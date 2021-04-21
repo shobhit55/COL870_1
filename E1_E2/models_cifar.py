@@ -30,7 +30,174 @@ from PIL import Image
 from sklearn.metrics import f1_score
 print(f"Pytorch version: {torch.__version__}")
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-from normlayer import BN,IN,BIN,LN,GN
+
+G  =  4
+
+class BN(nn.Module):
+  def __init__(self, input_dim, mom=0.9, eps=1e-5): #norm_layer
+      super().__init__()
+      self.input_dim = input_dim
+      self.mom = mom
+      self.eps = eps
+      self.gamma = nn.Parameter(torch.ones(1,input_dim,1,1))
+      self.beta = nn.Parameter(torch.zeros(1,input_dim,1,1))
+      self.moving_mean = torch.zeros(1,input_dim,1,1).to(device)
+      self.moving_var = torch.ones(1,input_dim,1,1).to(device)
+
+  def forward(self, x):
+      if not torch.is_grad_enabled():
+          return self.gamma*(x-self.moving_mean)/torch.sqrt(self.moving_var+self.eps) + self.beta
+
+      xmean = x.mean(dim=(0,2,3), keepdim=True)
+      xvar = ((x-xmean)**2).mean(dim=(0,2,3), keepdim=True)
+      Xhat = (x - xmean)/torch.sqrt(xvar+self.eps) 
+   
+      with torch.no_grad():
+        
+        self.moving_mean = self.mom*(self.moving_mean) + (1-self.mom)*xmean
+        self.moving_var = self.mom*(self.moving_var) + (1-self.mom)*xvar
+
+      return self.gamma*Xhat + self.beta
+
+
+class IN(nn.Module):
+
+    def __init__(self, input_dim, eps=1e-5, mom=0.9, batch_size = batch_size): #norm_layer
+        super().__init__()
+        self.input_dim = input_dim
+        self.G = input_dim
+        self.mom = mom
+        self.eps = eps
+        self.batch_size = batch_size
+        self.moving_mean = torch.zeros(batch_size, self.G, 1, 1, 1).to(device)
+        self.moving_var = torch.ones(batch_size, self.G, 1, 1, 1).to(device)
+        self.gamma = nn.Parameter(torch.ones(1,input_dim,1,1))
+        self.beta = nn.Parameter(torch.zeros(1,input_dim,1,1))
+
+    def forward(self, x):
+        N, C, H, W = x.shape 
+        if not torch.is_grad_enabled():
+            x = x.view(N, self.G, C // self.G, H, W)
+            x = (x - self.moving_mean)/torch.sqrt(self.moving_var+self.eps) 
+            x = x.view(N, C, H, W)
+            return x*self.gamma+ self.beta
+
+        x = x.view(N, self.G, C // self.G, H, W)
+        xmean = x.mean(dim = [2, 3, 4], keepdim = True).to(device)
+        xvar = torch.mean( (x-xmean)**2, [2, 3, 4], keepdim = True).to(device)
+        x = (x - xmean) / torch.sqrt(xvar + self.eps)
+        x = x.view(N, C, H, W) 
+
+        with torch.no_grad():
+          self.moving_mean = self.mom*(self.moving_mean) + (1-self.mom)*xmean
+          self.moving_var = self.mom*(self.moving_var) + (1-self.mom)*xvar
+        return x*self.gamma + self.beta
+
+
+class BIN(nn.Module):
+    def __init__(self, input_dim, mom=0.9, eps=1e-5, batch_size = batch_size): #norm_layer
+        super().__init__()
+        self.input_dim = input_dim
+        self.mom = mom
+        self.eps = eps
+        self.batch_size = batch_size
+        self.gamma = nn.Parameter(torch.ones(1,input_dim,1,1))
+        self.beta = nn.Parameter(torch.zeros(1,input_dim,1,1))
+        self.rho = nn.Parameter(torch.tensor(0.5))
+        self.moving_meanbn = torch.zeros(1,input_dim,1,1).to(device)
+        self.moving_varbn = torch.ones(1,input_dim,1,1).to(device)
+        self.moving_meanin = torch.zeros(batch_size, input_dim,1,1).to(device)
+        self.moving_varin = torch.ones(batch_size, input_dim,1,1).to(device)
+
+    def forward(self, x):
+        if not torch.is_grad_enabled():
+            Xhatbn = (x - self.moving_meanbn)/torch.sqrt(self.moving_varbn + self.eps) #BN
+            Xhatin = (x - self.moving_meanin)/torch.sqrt(self.moving_varin + self.eps) #BN
+            return self.gamma*(self.rho*Xhatbn + (1-self.rho)*Xhatin) + self.beta
+        
+        xmeanbn = x.mean(dim=(0,2,3), keepdim=True) #BN
+        xvarbn = ((x-xmeanbn)**2).mean(dim=(0,2,3), keepdim=True) #BN
+        Xhatbn = (x - xmeanbn)/torch.sqrt(xvarbn+self.eps) #BN
+
+        xmeanin = x.mean(dim=(2,3), keepdim=True) #IN
+        xvarin = ((x-xmeanin)**2).mean(dim=(2,3), keepdim=True) #IN
+        Xhatin = (x - xmeanin)/torch.sqrt(xvarin+self.eps) #IN
+        
+        Xhat = self.rho*Xhatbn + (1-self.rho)*Xhatin
+        #how to keep rho between 0 and 1
+        with torch.no_grad():
+          self.moving_meanbn = self.mom*(self.moving_meanbn) + (1-self.mom)*xmeanbn
+          self.moving_varbn = self.mom*(self.moving_varbn) + (1-self.mom)*xvarbn
+
+          self.moving_meanin = self.mom*(self.moving_meanin) + (1-self.mom)*xmeanin
+          self.moving_varin = self.mom*(self.moving_varin) + (1-self.mom)*xvarin
+        return self.gamma*Xhat + self.beta
+
+
+class LN(nn.Module):
+
+    def __init__(self, input_dim, eps=1e-5, mom=0.9, batch_size = batch_size): #norm_layer
+        super().__init__()
+        self.input_dim = input_dim
+        self.G = 1
+        self.mom = mom
+        self.eps = eps
+        self.batch_size = batch_size
+        self.moving_mean = torch.zeros(batch_size, self.G, 1, 1, 1).to(device)
+        self.moving_var = torch.ones(batch_size, self.G, 1, 1, 1).to(device)
+        self.gamma = nn.Parameter(torch.ones(1,input_dim,1,1))
+        self.beta = nn.Parameter(torch.zeros(1,input_dim,1,1))
+
+    def forward(self, x):
+        N, C, H, W = x.shape 
+        if not torch.is_grad_enabled():
+            x = x.view(N, self.G, C // self.G, H, W)
+            x = (x - self.moving_mean)/torch.sqrt(self.moving_var+self.eps) 
+            x = x.view(N, C, H, W)
+            return x*self.gamma+ self.beta
+        x = x.view(N, self.G, C // self.G, H, W)
+        xmean = x.mean(dim = [2, 3, 4], keepdim = True).to(device)
+        xvar = torch.mean( (x-xmean)**2, [2, 3, 4], keepdim = True).to(device)
+        x = (x - xmean) / torch.sqrt(xvar + self.eps)
+        x = x.view(N, C, H, W) 
+        with torch.no_grad():
+          self.moving_mean = self.mom*(self.moving_mean) + (1-self.mom)*xmean
+          self.moving_var = self.mom*(self.moving_var) + (1-self.mom)*xvar
+        return x*self.gamma + self.beta
+
+
+class GN(nn.Module):
+    def __init__(self, input_dim, G = 4, eps=1e-5, mom=0.9, batch_size = batch_size): #norm_layer
+        super().__init__()
+        self.input_dim = input_dim
+        self.G = G
+        self.mom = mom
+        self.eps = eps
+        self.batch_size = batch_size
+        self.moving_mean = torch.zeros(batch_size, self.G, 1, 1, 1).to(device)
+        self.moving_var = torch.ones(batch_size, self.G, 1, 1, 1).to(device)
+        self.gamma = nn.Parameter(torch.ones(1,input_dim,1,1))
+        self.beta = nn.Parameter(torch.zeros(1,input_dim,1,1))
+
+    def forward(self, x):
+        N, C, H, W = x.shape 
+        if not torch.is_grad_enabled():
+            x = x.view(N, self.G, C // self.G, H, W)
+            x = (x - self.moving_mean)/torch.sqrt(self.moving_var+self.eps) 
+            x = x.view(N, C, H, W)
+            return x*self.gamma+ self.beta
+
+        x = x.view(N, self.G, C // self.G, H, W)
+        xmean = x.mean(dim = [2, 3, 4], keepdim = True).to(device)
+        xvar = torch.mean( (x-xmean)**2, [2, 3, 4], keepdim = True).to(device)
+        x = (x - xmean) / torch.sqrt(xvar + self.eps)
+        x = x.view(N, C, H, W) 
+
+        with torch.no_grad():
+          self.moving_mean = self.mom*(self.moving_mean) + (1-self.mom)*xmean
+          self.moving_var = self.mom*(self.moving_var) + (1-self.mom)*xvar
+        return x*self.gamma + self.beta
+
 
 class BasicBlockBN(nn.Module):
     def __init__(self, input_dim, output_dim, identity_downsample = None, stride=1, norm_layer = None):
@@ -103,19 +270,19 @@ class Resnet(nn.Module):
             print("torch bn")
             self.bn1 = nn.BatchNorm2d(16).to(device)
           else:
-            if norm_layer=="BN":
+            if norm_layer=="bn":
               print(self.norm_layer)
               self.bn1 = BN(input_dim=16).to(device)
-            elif norm_layer=="IN":
+            elif norm_layer=="in":
               print(self.norm_layer)
               self.bn1 = IN(input_dim=16).to(device)
-            elif norm_layer=="BIN":
+            elif norm_layer=="bin":
               print(self.norm_layer)
               self.bn1 = BIN(input_dim=16).to(device)
-            elif norm_layer=="LN":
+            elif norm_layer=="ln":
               print(self.norm_layer)
               self.bn1 = LN(input_dim=16).to(device)
-            elif norm_layer=="GN":
+            elif norm_layer=="gn":
               print(self.norm_layer)
               self.bn1 = GN(input_dim=16, G=G).to(device)
 
@@ -125,7 +292,7 @@ class Resnet(nn.Module):
         self.layer3 = self.layer(32, 64, block, n_layers) #8x8 output, 64channels
         self.pool_out = nn.AvgPool2d(kernel_size=8) #1x1 output, 64 channels
         self.fc_out_layer = nn.Linear(64,num_classes) # fully connected output layer
-        # self.init_weights()
+        self.init_weights() #### update this
         self.fea = None
 
     def layer(self, input_dim, output_dim, block, num_blocks, stride=2):
