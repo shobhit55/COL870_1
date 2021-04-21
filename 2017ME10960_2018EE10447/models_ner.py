@@ -2,14 +2,15 @@ from torch import jit
 from torch import nn
 import torch
 
-class LayerNormLSTMCell(jit.ScriptModule): #jit.ScriptModule, nn.Module # jit to speed up the computation
+class LayerNormLSTMCell(jit.ScriptModule): #jit.ScriptModule, nn.Module
     def __init__(self, input_size, hidden_size, decompose_layernorm=False):
         super(LayerNormLSTMCell, self).__init__()
         self.input_size = input_size
         self.hidden_size = hidden_size
 
         self.linear_ih = nn.Linear(input_size, 4 * hidden_size) #1
-        self.linear_hh = nn.Linear(hidden_size, 4 * hidden_size) #2
+        self.linear_hh = nn.Linear(hidden_size, 4 * hidden_size) #1
+        
         ln = nn.LayerNorm
         self.layernorm_i = ln(4 * hidden_size, elementwise_affine=False)
         self.layernorm_h = ln(4 * hidden_size, elementwise_affine=False)
@@ -21,6 +22,7 @@ class LayerNormLSTMCell(jit.ScriptModule): #jit.ScriptModule, nn.Module # jit to
         hx, cx = state
         igates = self.layernorm_i(self.linear_ih(input))
         hgates = self.layernorm_h(self.linear_hh(hx))
+
         gates = igates + hgates
         ingate, forgetgate, cellgate, outgate = gates.chunk(4, 1)
         ingate = torch.sigmoid(ingate)
