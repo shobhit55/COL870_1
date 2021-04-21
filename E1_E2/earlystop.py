@@ -22,6 +22,7 @@ import glob, os, sys, re
 from sklearn.metrics import f1_score
 print(f"Pytorch version: {torch.__version__}")
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 class EarlyStopping:
     def __init__(self, patience=7, verbose=False, delta=0, path=None, trace_func=print):
         self.patience = patience
